@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, MapPin, Briefcase, Users, ExternalLink, Mail } from "lucide-react";
 
@@ -17,6 +18,7 @@ const ManageApplications = () => {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [assignmentData, setAssignmentData] = useState<{ [key: string]: { name: string; link: string } }>({});
 
   useEffect(() => {
     checkAuth();
@@ -67,27 +69,55 @@ const ManageApplications = () => {
 
   const handleStatusUpdate = async (applicationId: string, newStatus: string) => {
     setUpdatingStatus(applicationId);
+    
+    try {
+      const application = applications.find(app => app.id === applicationId);
+      const updateData: any = { status: newStatus };
+      
+      // If status is "assignment", include assignment details
+      if (newStatus === "assignment" && assignmentData[applicationId]) {
+        updateData.assignment_name = assignmentData[applicationId].name;
+        updateData.assignment_link = assignmentData[applicationId].link;
+      }
 
-    const { error } = await supabase
-      .from("applications")
-      .update({ status: newStatus })
-      .eq("id", applicationId);
+      const { error } = await supabase
+        .from("applications")
+        .update(updateData)
+        .eq("id", applicationId);
 
-    if (error) {
+      if (error) throw error;
+
+      // Send email notification
+      try {
+        await supabase.functions.invoke("send-application-email", {
+          body: {
+            to: application.profiles?.email,
+            candidateName: application.profiles?.full_name || "Candidate",
+            jobTitle: job?.title,
+            status: newStatus,
+            assignmentName: updateData.assignment_name,
+            assignmentLink: updateData.assignment_link,
+          },
+        });
+      } catch (emailError) {
+        console.error("Email error:", emailError);
+      }
+
+      toast({
+        title: "Status Updated",
+        description: "Application status updated and email sent to candidate.",
+      });
+      
+      fetchJobAndApplications();
+    } catch (error: any) {
       toast({
         title: "Update Failed",
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Status Updated",
-        description: "Application status has been updated successfully.",
-      });
-      fetchJobAndApplications();
+    } finally {
+      setUpdatingStatus(null);
     }
-
-    setUpdatingStatus(null);
   };
 
   const handleNotesUpdate = async (applicationId: string, notes: string) => {
@@ -247,41 +277,94 @@ const ManageApplications = () => {
                       </div>
                     )}
 
-                    {/* Status Update */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Update Status</Label>
-                        <Select
-                          value={application.status}
-                          onValueChange={(value) => handleStatusUpdate(application.id, value)}
-                          disabled={updatingStatus === application.id}
+                    {/* Assignment Display (if exists) */}
+                    {application.assignment_name && application.assignment_link && (
+                      <div className="bg-muted/50 p-4 rounded-lg">
+                        <Label className="text-sm font-medium">Assignment Given</Label>
+                        <p className="text-sm mt-1"><strong>Name:</strong> {application.assignment_name}</p>
+                        <a 
+                          href={application.assignment_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline flex items-center gap-1 mt-1"
                         >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="applied">Applied</SelectItem>
-                            <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                            <SelectItem value="assignment">Assignment Round</SelectItem>
-                            <SelectItem value="technical_interview">Technical Interview</SelectItem>
-                            <SelectItem value="hr_interview">HR Interview</SelectItem>
-                            <SelectItem value="verification">Verification</SelectItem>
-                            <SelectItem value="hired">Hired</SelectItem>
-                            <SelectItem value="rejected">Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <ExternalLink className="w-3 h-3" />
+                          {application.assignment_link}
+                        </a>
+                      </div>
+                    )}
+
+                    {/* Status Update and Assignment */}
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Update Status</Label>
+                          <Select
+                            value={application.status}
+                            onValueChange={(value) => handleStatusUpdate(application.id, value)}
+                            disabled={updatingStatus === application.id}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="applied">Applied</SelectItem>
+                              <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                              <SelectItem value="assignment">Assignment Round</SelectItem>
+                              <SelectItem value="technical_interview">Technical Interview</SelectItem>
+                              <SelectItem value="hr_interview">HR Interview</SelectItem>
+                              <SelectItem value="verification">Verification</SelectItem>
+                              <SelectItem value="hired">Hired</SelectItem>
+                              <SelectItem value="rejected">Rejected</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* Notes */}
+                        <div>
+                          <Label>Private Notes</Label>
+                          <Textarea
+                            placeholder="Add private notes about this candidate..."
+                            defaultValue={application.notes || ""}
+                            onBlur={(e) => handleNotesUpdate(application.id, e.target.value)}
+                            rows={3}
+                          />
+                        </div>
                       </div>
 
-                      {/* Notes */}
-                      <div>
-                        <Label>Notes</Label>
-                        <Textarea
-                          placeholder="Add private notes about this candidate..."
-                          defaultValue={application.notes || ""}
-                          onBlur={(e) => handleNotesUpdate(application.id, e.target.value)}
-                          rows={3}
-                        />
-                      </div>
+                      {/* Assignment Input (shows for assignment status) */}
+                      {application.status === "assignment" && (
+                        <div className="bg-primary/5 p-4 rounded-lg space-y-3">
+                          <Label>Assignment Details (will be emailed to candidate)</Label>
+                          <Input
+                            placeholder="Assignment Name (e.g., React Component Task)"
+                            value={assignmentData[application.id]?.name || application.assignment_name || ""}
+                            onChange={(e) => setAssignmentData({
+                              ...assignmentData,
+                              [application.id]: {
+                                ...assignmentData[application.id],
+                                name: e.target.value,
+                                link: assignmentData[application.id]?.link || application.assignment_link || ""
+                              }
+                            })}
+                          />
+                          <Input
+                            placeholder="Assignment Link (e.g., https://docs.google.com/...)"
+                            value={assignmentData[application.id]?.link || application.assignment_link || ""}
+                            onChange={(e) => setAssignmentData({
+                              ...assignmentData,
+                              [application.id]: {
+                                ...assignmentData[application.id],
+                                link: e.target.value,
+                                name: assignmentData[application.id]?.name || application.assignment_name || ""
+                              }
+                            })}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Click "Submit" in the status dropdown above to save and send email
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>

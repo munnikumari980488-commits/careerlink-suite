@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       applications: {
         Row: {
+          assignment_link: string | null
+          assignment_name: string | null
           candidate_id: string
           created_at: string | null
           id: string
@@ -26,6 +28,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          assignment_link?: string | null
+          assignment_name?: string | null
           candidate_id: string
           created_at?: string | null
           id?: string
@@ -36,6 +40,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          assignment_link?: string | null
+          assignment_name?: string | null
           candidate_id?: string
           created_at?: string | null
           id?: string
