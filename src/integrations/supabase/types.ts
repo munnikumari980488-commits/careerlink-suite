@@ -123,36 +123,54 @@ export type Database = {
       }
       profiles: {
         Row: {
+          achievements: Json | null
+          bio: string | null
           company_name: string | null
           created_at: string | null
+          education: Json | null
           email: string
+          experience: Json | null
           full_name: string | null
           id: string
           phone: string | null
+          projects: Json | null
           resume_link: string | null
           role: string
+          skills: string[] | null
           updated_at: string | null
         }
         Insert: {
+          achievements?: Json | null
+          bio?: string | null
           company_name?: string | null
           created_at?: string | null
+          education?: Json | null
           email: string
+          experience?: Json | null
           full_name?: string | null
           id: string
           phone?: string | null
+          projects?: Json | null
           resume_link?: string | null
           role: string
+          skills?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          achievements?: Json | null
+          bio?: string | null
           company_name?: string | null
           created_at?: string | null
+          education?: Json | null
           email?: string
+          experience?: Json | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          projects?: Json | null
           resume_link?: string | null
           role?: string
+          skills?: string[] | null
           updated_at?: string | null
         }
         Relationships: []

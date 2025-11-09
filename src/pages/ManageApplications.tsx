@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Briefcase, Users, ExternalLink, Mail } from "lucide-react";
+import { ArrowLeft, MapPin, Briefcase, Users, ExternalLink, Mail, Eye, Phone } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 const ManageApplications = () => {
   const { id } = useParams();
@@ -53,7 +55,14 @@ const ManageApplications = () => {
           profiles!applications_candidate_id_fkey(
             full_name,
             email,
-            phone
+            phone,
+            bio,
+            skills,
+            education,
+            experience,
+            projects,
+            achievements,
+            resume_link
           )
         `)
         .eq("job_id", id)
@@ -239,105 +248,225 @@ const ManageApplications = () => {
             applications.map((application) => (
               <Card key={application.id}>
                 <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* Candidate Info */}
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold mb-2">
-                          {application.profiles?.full_name || "Candidate"}
-                        </h3>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          {application.profiles?.email && (
-                            <div className="flex items-center gap-1">
-                              <Mail className="h-4 w-4" />
-                              {application.profiles.email}
-                            </div>
-                          )}
-                          <div className="text-xs text-muted-foreground">
+                  {/* Candidate Row Layout */}
+                  <div className="grid md:grid-cols-[2fr_1fr] gap-6 mb-4">
+                    <div className="space-y-3">
+                      {/* Name, Email, Phone */}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-xl font-semibold">
+                            {application.profiles?.full_name || "Candidate"}
+                          </h3>
+                          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-1">
+                            {application.profiles?.email && (
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {application.profiles.email}
+                              </div>
+                            )}
+                            {application.profiles?.phone && (
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {application.profiles.phone}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
                             Applied {new Date(application.created_at).toLocaleDateString()}
                           </div>
                         </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getStatusColor(application.status)}`}>
+                          {getStatusLabel(application.status)}
+                        </span>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(application.status)}`}>
-                        {getStatusLabel(application.status)}
-                      </span>
+
+                      {/* Skills */}
+                      {application.profiles?.skills && application.profiles.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {application.profiles.skills.slice(0, 5).map((skill: string, idx: number) => (
+                            <Badge key={idx} variant="secondary">{skill}</Badge>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        {application.resume_link && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(application.resume_link, "_blank")}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Application Resume
+                          </Button>
+                        )}
+                        {application.profiles?.resume_link && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(application.profiles.resume_link, "_blank")}
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Profile Resume
+                          </Button>
+                        )}
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Full Profile
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>{application.profiles?.full_name || "Candidate"} - Full Profile</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-6">
+                              {/* Bio */}
+                              {application.profiles?.bio && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">Bio</h4>
+                                  <p className="text-sm text-muted-foreground">{application.profiles.bio}</p>
+                                </div>
+                              )}
+
+                              {/* Skills */}
+                              {application.profiles?.skills && application.profiles.skills.length > 0 && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">Skills</h4>
+                                  <div className="flex flex-wrap gap-2">
+                                    {application.profiles.skills.map((skill: string, idx: number) => (
+                                      <Badge key={idx} variant="secondary">{skill}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Education */}
+                              {application.profiles?.education && application.profiles.education.length > 0 && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">Education</h4>
+                                  {application.profiles.education.map((edu: any, idx: number) => (
+                                    <div key={idx} className="mb-3 p-3 bg-muted/50 rounded">
+                                      <div className="font-medium">{edu.degree}</div>
+                                      <div className="text-sm text-muted-foreground">{edu.institution}</div>
+                                      <div className="text-sm text-muted-foreground">{edu.year} • {edu.percentage}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Experience */}
+                              {application.profiles?.experience && application.profiles.experience.length > 0 && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">Work Experience</h4>
+                                  {application.profiles.experience.map((exp: any, idx: number) => (
+                                    <div key={idx} className="mb-3 p-3 bg-muted/50 rounded">
+                                      <div className="font-medium">{exp.title}</div>
+                                      <div className="text-sm text-muted-foreground">{exp.company} • {exp.duration}</div>
+                                      <div className="text-sm mt-1">{exp.description}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Projects */}
+                              {application.profiles?.projects && application.profiles.projects.length > 0 && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">Projects</h4>
+                                  {application.profiles.projects.map((proj: any, idx: number) => (
+                                    <div key={idx} className="mb-3 p-3 bg-muted/50 rounded">
+                                      <div className="font-medium">{proj.name}</div>
+                                      <div className="text-sm mt-1">{proj.description}</div>
+                                      <div className="text-sm text-muted-foreground mt-1">Tech: {proj.technologies}</div>
+                                      {proj.link && (
+                                        <a href={proj.link} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                                          View Project →
+                                        </a>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Achievements */}
+                              {application.profiles?.achievements && application.profiles.achievements.length > 0 && (
+                                <div>
+                                  <h4 className="font-semibold mb-2">Achievements</h4>
+                                  {application.profiles.achievements.map((ach: any, idx: number) => (
+                                    <div key={idx} className="mb-3 p-3 bg-muted/50 rounded">
+                                      <div className="font-medium">{ach.title}</div>
+                                      <div className="text-sm text-muted-foreground">{ach.date}</div>
+                                      <div className="text-sm mt-1">{ach.description}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+
+                      {/* Assignment Display */}
+                      {application.assignment_name && application.assignment_link && (
+                        <div className="bg-muted/50 p-4 rounded-lg">
+                          <Label className="text-sm font-medium">Assignment Given</Label>
+                          <p className="text-sm mt-1"><strong>Name:</strong> {application.assignment_name}</p>
+                          <a 
+                            href={application.assignment_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-primary hover:underline flex items-center gap-1 mt-1"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            {application.assignment_link}
+                          </a>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Resume Link */}
-                    {application.resume_link && (
-                      <div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(application.resume_link, "_blank")}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          View Resume
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Assignment Display (if exists) */}
-                    {application.assignment_name && application.assignment_link && (
-                      <div className="bg-muted/50 p-4 rounded-lg">
-                        <Label className="text-sm font-medium">Assignment Given</Label>
-                        <p className="text-sm mt-1"><strong>Name:</strong> {application.assignment_name}</p>
-                        <a 
-                          href={application.assignment_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline flex items-center gap-1 mt-1"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          {application.assignment_link}
-                        </a>
-                      </div>
-                    )}
-
-                    {/* Status Update and Assignment */}
+                    {/* Status and Notes */}
                     <div className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>Update Status</Label>
-                          <Select
-                            value={application.status}
-                            onValueChange={(value) => handleStatusUpdate(application.id, value)}
-                            disabled={updatingStatus === application.id}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="applied">Applied</SelectItem>
-                              <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                              <SelectItem value="assignment">Assignment Round</SelectItem>
-                              <SelectItem value="technical_interview">Technical Interview</SelectItem>
-                              <SelectItem value="hr_interview">HR Interview</SelectItem>
-                              <SelectItem value="verification">Verification</SelectItem>
-                              <SelectItem value="hired">Hired</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Notes */}
-                        <div>
-                          <Label>Private Notes</Label>
-                          <Textarea
-                            placeholder="Add private notes about this candidate..."
-                            defaultValue={application.notes || ""}
-                            onBlur={(e) => handleNotesUpdate(application.id, e.target.value)}
-                            rows={3}
-                          />
-                        </div>
+                      <div>
+                        <Label>Update Status</Label>
+                        <Select
+                          value={application.status}
+                          onValueChange={(value) => handleStatusUpdate(application.id, value)}
+                          disabled={updatingStatus === application.id}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="applied">Applied</SelectItem>
+                            <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                            <SelectItem value="assignment">Assignment Round</SelectItem>
+                            <SelectItem value="technical_interview">Technical Interview</SelectItem>
+                            <SelectItem value="hr_interview">HR Interview</SelectItem>
+                            <SelectItem value="verification">Verification</SelectItem>
+                            <SelectItem value="hired">Hired</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
 
-                      {/* Assignment Input (shows for assignment status) */}
+                      <div>
+                        <Label>Private Notes</Label>
+                        <Textarea
+                          placeholder="Add private notes about this candidate..."
+                          defaultValue={application.notes || ""}
+                          onBlur={(e) => handleNotesUpdate(application.id, e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+
+                      {/* Assignment Input */}
                       {application.status === "assignment" && (
                         <div className="bg-primary/5 p-4 rounded-lg space-y-3">
-                          <Label>Assignment Details (will be emailed to candidate)</Label>
+                          <Label>Assignment Details</Label>
                           <Input
-                            placeholder="Assignment Name (e.g., React Component Task)"
+                            placeholder="Assignment Name"
                             value={assignmentData[application.id]?.name || application.assignment_name || ""}
                             onChange={(e) => setAssignmentData({
                               ...assignmentData,
@@ -349,7 +478,7 @@ const ManageApplications = () => {
                             })}
                           />
                           <Input
-                            placeholder="Assignment Link (e.g., https://docs.google.com/...)"
+                            placeholder="Assignment Link"
                             value={assignmentData[application.id]?.link || application.assignment_link || ""}
                             onChange={(e) => setAssignmentData({
                               ...assignmentData,
@@ -360,9 +489,6 @@ const ManageApplications = () => {
                               }
                             })}
                           />
-                          <p className="text-xs text-muted-foreground">
-                            Click "Submit" in the status dropdown above to save and send email
-                          </p>
                         </div>
                       )}
                     </div>

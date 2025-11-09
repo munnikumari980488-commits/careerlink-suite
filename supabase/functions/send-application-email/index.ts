@@ -25,6 +25,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Sending email to:", to);
 
+    if (!to) {
+      console.error("Recipient email is missing");
+      return new Response(
+        JSON.stringify({ error: "Recipient email is required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const client = new SMTPClient({
       connection: {
         hostname: Deno.env.get("SMTP_HOST")!,

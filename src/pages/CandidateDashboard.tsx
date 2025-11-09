@@ -108,10 +108,16 @@ const CandidateDashboard = () => {
             <User className="h-6 w-6 text-secondary" />
             <h1 className="text-2xl font-bold">Candidate Dashboard</h1>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/candidate/profile")}>
+              <User className="h-4 w-4 mr-2" />
+              My Profile
+            </Button>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
