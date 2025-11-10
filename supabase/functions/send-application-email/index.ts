@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,17 +33,16 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: Deno.env.get("SMTP_HOST")!,
-        port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
-        tls: true,
-        auth: {
-          username: Deno.env.get("SMTP_USER")!,
-          password: Deno.env.get("SMTP_PASSWORD")!,
-        },
-      },
-    });
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY is not configured");
+      return new Response(
+        JSON.stringify({ error: "Email service not configured" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const resend = new Resend(resendApiKey);
 
     let emailContent = `
       <h2>Application Status Update</h2>
@@ -65,26 +64,32 @@ const handler = async (req: Request): Promise<Response> => {
       <p>Best regards,<br>The Hiring Team</p>
     `;
 
-    await client.send({
-      from: Deno.env.get("SMTP_FROM_EMAIL")!,
-      to: to,
+    const { data, error } = await resend.emails.send({
+      from: "Application Updates <onboarding@resend.dev>",
+      to: [to],
       subject: `Application Update - ${jobTitle}`,
       html: emailContent,
     });
 
-    await client.close();
+    if (error) {
+      console.error("Error sending email:", error);
+      return new Response(
+        JSON.stringify({ error: error.message }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
-    console.log("Email sent successfully");
+    console.log("Email sent successfully:", data);
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, data }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
   } catch (error: any) {
-    console.error("Error sending email:", error);
+    console.error("Error in send-application-email function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
