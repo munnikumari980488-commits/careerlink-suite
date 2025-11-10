@@ -69,7 +69,6 @@ const handler = async (req: Request): Promise<Response> => {
       from: Deno.env.get("SMTP_FROM_EMAIL")!,
       to: to,
       subject: `Application Update - ${jobTitle}`,
-      content: emailContent,
       html: emailContent,
     });
 
