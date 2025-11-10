@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Briefcase, Plus, LogOut, Users } from "lucide-react";
+import { Briefcase, Plus, LogOut, Users, UserPlus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const EmployerDashboard = () => {
   const navigate = useNavigate();
@@ -12,11 +15,37 @@ const EmployerDashboard = () => {
   const [profile, setProfile] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalApplications: 0 });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    email: "",
+    password: "",
+    fullName: "",
+    companyName: "",
+  });
 
   useEffect(() => {
     checkAuth();
     fetchProfile();
+    checkAdminRole();
   }, []);
+
+  const checkAdminRole = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!error && data) {
+      setIsAdmin(true);
+    }
+  };
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -76,6 +105,40 @@ const EmployerDashboard = () => {
     navigate("/");
   };
 
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreatingUser(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("create-employer-user", {
+        body: newUserData,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "User Created",
+        description: `Employer account created for ${newUserData.email}`,
+      });
+
+      setCreateUserOpen(false);
+      setNewUserData({
+        email: "",
+        password: "",
+        fullName: "",
+        companyName: "",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to Create User",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -84,10 +147,71 @@ const EmployerDashboard = () => {
             <Briefcase className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Employer Dashboard</h1>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Dialog open={createUserOpen} onOpenChange={setCreateUserOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="default">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Create User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Employer User</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleCreateUser} className="space-y-4">
+                    <div>
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input
+                        id="fullName"
+                        value={newUserData.fullName}
+                        onChange={(e) => setNewUserData({ ...newUserData, fullName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="companyName">Company Name</Label>
+                      <Input
+                        id="companyName"
+                        value={newUserData.companyName}
+                        onChange={(e) => setNewUserData({ ...newUserData, companyName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={newUserData.email}
+                        onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={newUserData.password}
+                        onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                    <Button type="submit" className="w-full" disabled={creatingUser}>
+                      {creatingUser ? "Creating..." : "Create Employer User"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 

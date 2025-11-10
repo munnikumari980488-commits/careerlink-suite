@@ -2,3 +2,6 @@ project_id = "jbtmrxerwtaztefnakzc"
 
 [functions.send-application-email]
 verify_jwt = false
+
+[functions.create-employer-user]
+verify_jwt = true
