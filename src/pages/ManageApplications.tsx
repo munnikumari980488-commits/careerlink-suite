@@ -21,6 +21,7 @@ const ManageApplications = () => {
   const [loading, setLoading] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const [assignmentData, setAssignmentData] = useState<{ [key: string]: { name: string; link: string } }>({});
+  const [pendingStatusChanges, setPendingStatusChanges] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     checkAuth();
@@ -76,7 +77,14 @@ const ManageApplications = () => {
     setLoading(false);
   };
 
-  const handleStatusUpdate = async (applicationId: string, newStatus: string) => {
+  const handleStatusChange = (applicationId: string, newStatus: string) => {
+    setPendingStatusChanges({ ...pendingStatusChanges, [applicationId]: newStatus });
+  };
+
+  const handleSubmitStatusUpdate = async (applicationId: string) => {
+    const newStatus = pendingStatusChanges[applicationId];
+    if (!newStatus) return;
+
     setUpdatingStatus(applicationId);
     
     try {
@@ -98,7 +106,7 @@ const ManageApplications = () => {
 
       // Send email notification
       try {
-        await supabase.functions.invoke("send-application-email", {
+        const emailResult = await supabase.functions.invoke("send-application-email", {
           body: {
             to: application.profiles?.email,
             candidateName: application.profiles?.full_name || "Candidate",
@@ -108,6 +116,8 @@ const ManageApplications = () => {
             assignmentLink: updateData.assignment_link,
           },
         });
+        
+        console.log("Email send result:", emailResult);
       } catch (emailError) {
         console.error("Email error:", emailError);
       }
@@ -116,6 +126,11 @@ const ManageApplications = () => {
         title: "Status Updated",
         description: "Application status updated and email sent to candidate.",
       });
+      
+      // Clear pending change
+      const updatedPending = { ...pendingStatusChanges };
+      delete updatedPending[applicationId];
+      setPendingStatusChanges(updatedPending);
       
       fetchJobAndApplications();
     } catch (error: any) {
@@ -431,8 +446,8 @@ const ManageApplications = () => {
                       <div>
                         <Label>Update Status</Label>
                         <Select
-                          value={application.status}
-                          onValueChange={(value) => handleStatusUpdate(application.id, value)}
+                          value={pendingStatusChanges[application.id] || application.status}
+                          onValueChange={(value) => handleStatusChange(application.id, value)}
                           disabled={updatingStatus === application.id}
                         >
                           <SelectTrigger>
@@ -449,6 +464,15 @@ const ManageApplications = () => {
                             <SelectItem value="rejected">Rejected</SelectItem>
                           </SelectContent>
                         </Select>
+                        {pendingStatusChanges[application.id] && (
+                          <Button
+                            onClick={() => handleSubmitStatusUpdate(application.id)}
+                            disabled={updatingStatus === application.id}
+                            className="w-full mt-2"
+                          >
+                            {updatingStatus === application.id ? "Submitting..." : "Submit Status Change"}
+                          </Button>
+                        )}
                       </div>
 
                       <div>
@@ -462,7 +486,7 @@ const ManageApplications = () => {
                       </div>
 
                       {/* Assignment Input */}
-                      {application.status === "assignment" && (
+                      {(pendingStatusChanges[application.id] === "assignment" || application.status === "assignment") && (
                         <div className="bg-primary/5 p-4 rounded-lg space-y-3">
                           <Label>Assignment Details</Label>
                           <Input

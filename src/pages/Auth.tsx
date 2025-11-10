@@ -134,9 +134,9 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className={`grid w-full ${role === "candidate" ? "grid-cols-2" : "grid-cols-1"}`}>
               <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              {role === "candidate" && <TabsTrigger value="signup">Sign Up</TabsTrigger>}
             </TabsList>
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
