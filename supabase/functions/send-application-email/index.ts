@@ -45,31 +45,36 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-    let emailContent = `
+    let htmlContent = `
       <h2>Application Status Update</h2>
       <p>Dear ${candidateName},</p>
       <p>Your application for <strong>${jobTitle}</strong> has been updated.</p>
       <p><strong>New Status:</strong> ${status}</p>
     `;
 
+    let plainTextContent = `Application Status Update\n\nDear ${candidateName},\n\nYour application for ${jobTitle} has been updated.\n\nNew Status: ${status}\n`;
+
     if (assignmentName && assignmentLink) {
-      emailContent += `
+      htmlContent += `
         <h3>Assignment Details</h3>
         <p><strong>Assignment:</strong> ${assignmentName}</p>
         <p><strong>Link:</strong> <a href="${assignmentLink}">${assignmentLink}</a></p>
         <p>Please complete the assignment and submit it through the provided link.</p>
       `;
+      plainTextContent += `\nAssignment Details\nAssignment: ${assignmentName}\nLink: ${assignmentLink}\n\nPlease complete the assignment and submit it through the provided link.\n`;
     }
 
-    emailContent += `
+    htmlContent += `
       <p>Best regards,<br>The Hiring Team</p>
     `;
+    plainTextContent += `\nBest regards,\nThe Hiring Team`;
 
     await client.send({
       from: Deno.env.get("SMTP_FROM_EMAIL")!,
       to: to,
       subject: `Application Update - ${jobTitle}`,
-      html: emailContent,
+      content: plainTextContent,
+      html: htmlContent,
     });
 
     await client.close();
