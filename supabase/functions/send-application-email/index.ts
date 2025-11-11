@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,86 +68,44 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Use Deno's built-in fetch to call an SMTP API service
-    // Since SMTP libraries have issues, we'll use a simple workaround with raw SMTP protocol
     const smtpHost = Deno.env.get("SMTP_HOST")!;
     const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
     const smtpUser = Deno.env.get("SMTP_USER")!;
     const smtpPassword = Deno.env.get("SMTP_PASSWORD")!;
     const smtpFrom = Deno.env.get("SMTP_FROM_EMAIL")!;
 
-    // Connect to SMTP server using raw TCP
-    const conn = await Deno.connect({ hostname: smtpHost, port: smtpPort });
-    
-    const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
-    
-    // Helper function to read response
-    const readResponse = async () => {
-      const buffer = new Uint8Array(1024);
-      const n = await conn.read(buffer);
-      if (n === null) throw new Error("Connection closed");
-      return decoder.decode(buffer.subarray(0, n));
-    };
+    console.log("Connecting to SMTP server:", smtpHost, smtpPort);
 
-    // Helper function to send command
-    const sendCommand = async (cmd: string) => {
-      await conn.write(encoder.encode(cmd + "\r\n"));
-      return await readResponse();
-    };
+    const client = new SmtpClient();
 
-    try {
-      // SMTP handshake
-      await readResponse(); // Read welcome message
-      await sendCommand(`EHLO ${smtpHost}`);
-      await sendCommand("STARTTLS");
-      
-      // Upgrade to TLS
-      const tlsConn = await Deno.startTls(conn, { hostname: smtpHost });
-      
-      // Auth
-      await tlsConn.write(encoder.encode(`EHLO ${smtpHost}\r\n`));
-      await readResponse();
-      
-      await tlsConn.write(encoder.encode("AUTH LOGIN\r\n"));
-      await readResponse();
-      
-      await tlsConn.write(encoder.encode(btoa(smtpUser) + "\r\n"));
-      await readResponse();
-      
-      await tlsConn.write(encoder.encode(btoa(smtpPassword) + "\r\n"));
-      await readResponse();
-      
-      // Send email
-      await tlsConn.write(encoder.encode(`MAIL FROM:<${smtpFrom}>\r\n`));
-      await readResponse();
-      
-      await tlsConn.write(encoder.encode(`RCPT TO:<${to}>\r\n`));
-      await readResponse();
-      
-      await tlsConn.write(encoder.encode("DATA\r\n"));
-      await readResponse();
-      
-      const emailData = `From: ${smtpFrom}\r\nTo: ${to}\r\nSubject: Application Update - ${jobTitle}\r\nMIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n${emailContent}\r\n.\r\n`;
-      await tlsConn.write(encoder.encode(emailData));
-      await readResponse();
-      
-      await tlsConn.write(encoder.encode("QUIT\r\n"));
-      tlsConn.close();
-      
-      console.log("Email sent successfully to:", to);
+    await client.connectTLS({
+      hostname: smtpHost,
+      port: smtpPort,
+      username: smtpUser,
+      password: smtpPassword,
+    });
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    } catch (smtpError) {
-      conn.close();
-      throw smtpError;
-    }
+    console.log("SMTP connection established, sending email...");
+
+    await client.send({
+      from: smtpFrom,
+      to: to,
+      subject: `Application Update - ${jobTitle}`,
+      content: emailContent,
+      html: emailContent,
+    });
+
+    await client.close();
+
+    console.log("Email sent successfully to:", to);
+
+    return new Response(
+      JSON.stringify({ success: true }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
   } catch (error: any) {
     console.error("Error in send-application-email function:", error);
     return new Response(
