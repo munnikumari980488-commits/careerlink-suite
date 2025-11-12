@@ -69,23 +69,28 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     const smtpHost = Deno.env.get("SMTP_HOST")!;
-    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "587");
+    const smtpPort = parseInt(Deno.env.get("SMTP_PORT") || "465");
     const smtpUser = Deno.env.get("SMTP_USER")!;
     const smtpPassword = Deno.env.get("SMTP_PASSWORD")!;
     const smtpFrom = Deno.env.get("SMTP_FROM_EMAIL")!;
 
     console.log("Connecting to SMTP server:", smtpHost, smtpPort);
 
-    // Create SMTP client
+    // Create SMTP client with proper TLS configuration
+    // For Gmail: use port 465 with tls: true (direct SSL/TLS connection)
+    // STARTTLS (port 587) has issues in edge function environment
     const client = new SMTPClient({
       connection: {
         hostname: smtpHost,
         port: smtpPort,
-        tls: smtpPort === 465, // Use TLS for port 465, STARTTLS for 587
+        tls: true, // Always use direct TLS connection
         auth: {
           username: smtpUser,
           password: smtpPassword,
         },
+      },
+      debug: {
+        noStartTLS: true, // Disable STARTTLS to avoid edge function compatibility issues
       },
     });
 
