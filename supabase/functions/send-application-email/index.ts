@@ -74,23 +74,35 @@ const handler = async (req: Request): Promise<Response> => {
     const smtpPassword = Deno.env.get("SMTP_PASSWORD")!;
     const smtpFrom = Deno.env.get("SMTP_FROM_EMAIL")!;
 
-    console.log("Connecting to SMTP server:", smtpHost, smtpPort);
+    console.log("SMTP Configuration:", {
+      host: smtpHost,
+      port: smtpPort,
+      user: smtpUser,
+      from: smtpFrom,
+      portType: smtpPort === 465 ? "SSL/TLS (465)" : "STARTTLS (587)"
+    });
 
-    // Create SMTP client with proper TLS configuration
-    // For Gmail: use port 465 with tls: true (direct SSL/TLS connection)
-    // STARTTLS (port 587) has issues in edge function environment
+    // Gmail MUST use port 465 with direct SSL/TLS
+    // Port 587 with STARTTLS doesn't work in edge functions
+    if (smtpPort !== 465) {
+      console.error("ERROR: Gmail requires port 465. Current port:", smtpPort);
+      return new Response(
+        JSON.stringify({ 
+          error: "Invalid SMTP configuration. Gmail requires port 465 with SSL/TLS. Please update your SMTP_PORT secret to 465." 
+        }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     const client = new SMTPClient({
       connection: {
         hostname: smtpHost,
-        port: smtpPort,
-        tls: true, // Always use direct TLS connection
+        port: 465, // Force port 465 for Gmail
+        tls: true, // Direct SSL/TLS connection
         auth: {
           username: smtpUser,
           password: smtpPassword,
         },
-      },
-      debug: {
-        noStartTLS: true, // Disable STARTTLS to avoid edge function compatibility issues
       },
     });
 
