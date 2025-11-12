@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,22 +76,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Connecting to SMTP server:", smtpHost, smtpPort);
 
-    const client = new SmtpClient();
-
-    await client.connectTLS({
-      hostname: smtpHost,
-      port: smtpPort,
-      username: smtpUser,
-      password: smtpPassword,
+    // Create SMTP client
+    const client = new SMTPClient({
+      connection: {
+        hostname: smtpHost,
+        port: smtpPort,
+        tls: smtpPort === 465, // Use TLS for port 465, STARTTLS for 587
+        auth: {
+          username: smtpUser,
+          password: smtpPassword,
+        },
+      },
     });
 
-    console.log("SMTP connection established, sending email...");
+    console.log("SMTP client created, sending email...");
 
+    // Send email
     await client.send({
       from: smtpFrom,
       to: to,
       subject: `Application Update - ${jobTitle}`,
-      content: emailContent,
       html: emailContent,
     });
 
