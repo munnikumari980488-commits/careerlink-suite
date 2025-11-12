@@ -10,6 +10,7 @@ import CandidateDashboard from "./pages/CandidateDashboard";
 import Jobs from "./pages/Jobs";
 import JobDetail from "./pages/JobDetail";
 import PostJob from "./pages/PostJob";
+import EditJob from "./pages/EditJob";
 import ManageApplications from "./pages/ManageApplications";
 import CandidateProfile from "./pages/CandidateProfile";
 import NotFound from "./pages/NotFound";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/candidate/profile" element={<CandidateProfile />} />
           <Route path="/employer/dashboard" element={<EmployerDashboard />} />
           <Route path="/employer/post-job" element={<PostJob />} />
+          <Route path="/employer/jobs/edit/:id" element={<EditJob />} />
           <Route path="/employer/jobs/:id" element={<ManageApplications />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/jobs/:id" element={<JobDetail />} />

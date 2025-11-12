@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Briefcase, Users, ExternalLink, Mail, Eye, Phone } from "lucide-react";
+import { ArrowLeft, MapPin, Briefcase, Users, ExternalLink, Mail, Eye, Phone, Pencil } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -226,7 +226,13 @@ const ManageApplications = () => {
         {/* Job Details */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-3xl">{job.title}</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-3xl">{job.title}</CardTitle>
+              <Button onClick={() => navigate(`/employer/jobs/edit/${job.id}`)} variant="outline">
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Job
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-3 gap-4 mb-4">
