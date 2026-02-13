@@ -125,7 +125,11 @@ export type Database = {
         Row: {
           achievements: Json | null
           bio: string | null
+          company_address: string | null
+          company_description: string | null
+          company_logo_url: string | null
           company_name: string | null
+          company_website: string | null
           created_at: string | null
           education: Json | null
           email: string
@@ -133,6 +137,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          profile_image_url: string | null
           projects: Json | null
           resume_link: string | null
           role: string
@@ -142,7 +147,11 @@ export type Database = {
         Insert: {
           achievements?: Json | null
           bio?: string | null
+          company_address?: string | null
+          company_description?: string | null
+          company_logo_url?: string | null
           company_name?: string | null
+          company_website?: string | null
           created_at?: string | null
           education?: Json | null
           email: string
@@ -150,6 +159,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          profile_image_url?: string | null
           projects?: Json | null
           resume_link?: string | null
           role: string
@@ -159,7 +169,11 @@ export type Database = {
         Update: {
           achievements?: Json | null
           bio?: string | null
+          company_address?: string | null
+          company_description?: string | null
+          company_logo_url?: string | null
           company_name?: string | null
+          company_website?: string | null
           created_at?: string | null
           education?: Json | null
           email?: string
@@ -167,6 +181,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          profile_image_url?: string | null
           projects?: Json | null
           resume_link?: string | null
           role?: string

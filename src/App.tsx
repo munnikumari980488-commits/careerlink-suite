@@ -12,6 +12,8 @@ import JobDetail from "./pages/JobDetail";
 import PostJob from "./pages/PostJob";
 import EditJob from "./pages/EditJob";
 import ManageApplications from "./pages/ManageApplications";
+import ManageEmployers from "./pages/ManageEmployers";
+import EmployerProfile from "./pages/EmployerProfile";
 import CandidateProfile from "./pages/CandidateProfile";
 import NotFound from "./pages/NotFound";
 
@@ -32,6 +34,9 @@ const App = () => (
           <Route path="/employer/post-job" element={<PostJob />} />
           <Route path="/employer/jobs/edit/:id" element={<EditJob />} />
           <Route path="/employer/jobs/:id" element={<ManageApplications />} />
+          <Route path="/employer/manage" element={<ManageEmployers />} />
+          <Route path="/employer/profile/:id" element={<EmployerProfile />} />
+          <Route path="/employer/profile" element={<EmployerProfile />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
