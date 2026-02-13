@@ -11,6 +11,10 @@ interface CreateUserRequest {
   password: string;
   fullName: string;
   companyName: string;
+  companyDescription?: string;
+  companyWebsite?: string;
+  companyAddress?: string;
+  phone?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -66,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Get request body
-    const { email, password, fullName, companyName }: CreateUserRequest = await req.json();
+    const { email, password, fullName, companyName, companyDescription, companyWebsite, companyAddress, phone }: CreateUserRequest = await req.json();
 
     if (!email || !password || !fullName || !companyName) {
       return new Response(
@@ -93,6 +97,22 @@ const handler = async (req: Request): Promise<Response> => {
         JSON.stringify({ error: createError.message }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
+    }
+
+    // Update profile with additional company details
+    const { error: profileUpdateError } = await supabaseAdmin
+      .from("profiles")
+      .update({
+        company_name: companyName,
+        phone: phone || null,
+        company_description: companyDescription || null,
+        company_website: companyWebsite || null,
+        company_address: companyAddress || null,
+      })
+      .eq("id", newUser.user.id);
+
+    if (profileUpdateError) {
+      console.error("Error updating profile:", profileUpdateError);
     }
 
     // Add employer role to user_roles table
