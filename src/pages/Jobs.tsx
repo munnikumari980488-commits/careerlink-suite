@@ -14,6 +14,7 @@ const Jobs = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [locationFilter, setLocationFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [experienceFilter, setExperienceFilter] = useState("all");
   const [session, setSession] = useState<any>(null);
 
   useEffect(() => {
@@ -23,7 +24,7 @@ const Jobs = () => {
 
   useEffect(() => {
     filterJobs();
-  }, [jobs, searchTerm, locationFilter, typeFilter]);
+  }, [jobs, searchTerm, locationFilter, typeFilter, experienceFilter]);
 
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -63,6 +64,17 @@ const Jobs = () => {
 
     if (typeFilter !== "all") {
       filtered = filtered.filter((job) => job.job_type === typeFilter);
+    }
+
+    if (experienceFilter !== "all") {
+      filtered = filtered.filter((job) => {
+        const exp = parseInt(job.experience_required) || 0;
+        if (experienceFilter === "fresher") return exp === 0;
+        if (experienceFilter === "1-2") return exp >= 1 && exp <= 2;
+        if (experienceFilter === "3-5") return exp >= 3 && exp <= 5;
+        if (experienceFilter === "5+") return exp > 5;
+        return true;
+      });
     }
 
     setFilteredJobs(filtered);
@@ -107,7 +119,7 @@ const Jobs = () => {
           <h2 className="text-3xl font-bold mb-4">Find Your Next Opportunity</h2>
           
           {/* Search and Filters */}
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-5 gap-4">
             <div className="md:col-span-2">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -140,6 +152,22 @@ const Jobs = () => {
                 <SelectItem value="Work From Home">Work From Home</SelectItem>
                 <SelectItem value="Work From Office">Work From Office</SelectItem>
                 <SelectItem value="Hybrid">Hybrid</SelectItem>
+                <SelectItem value="Internship">Internship</SelectItem>
+                <SelectItem value="Full Time">Full Time</SelectItem>
+                <SelectItem value="Part Time">Part Time</SelectItem>
+                <SelectItem value="Contract">Contract</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={experienceFilter} onValueChange={setExperienceFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Experience" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Experience</SelectItem>
+                <SelectItem value="fresher">Fresher (0 yrs)</SelectItem>
+                <SelectItem value="1-2">1-2 Years</SelectItem>
+                <SelectItem value="3-5">3-5 Years</SelectItem>
+                <SelectItem value="5+">5+ Years</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -185,7 +213,17 @@ const Jobs = () => {
                       </div>
                       <p className="text-sm line-clamp-2">{job.description}</p>
                     </div>
-                    <Button variant="outline">View Details</Button>
+                    <div className="flex flex-col gap-2">
+                      <Button variant="outline" onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job.id}`); }}>View Details</Button>
+                      <Button onClick={(e) => { 
+                        e.stopPropagation(); 
+                        if (!session) { 
+                          navigate("/auth?role=candidate"); 
+                        } else { 
+                          navigate(`/jobs/${job.id}`); 
+                        } 
+                      }}>Apply Now</Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
