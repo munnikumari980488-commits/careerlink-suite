@@ -28,7 +28,7 @@ const Index = () => {
               <Button 
                 size="lg" 
                 className="text-lg px-8 shadow-[var(--shadow-elegant)] hover:scale-105 transition-transform"
-                onClick={() => navigate("/auth?role=candidate")}
+                onClick={() => navigate("/jobs")}
               >
                 <Search className="mr-2 h-5 w-5" />
                 Find Jobs
