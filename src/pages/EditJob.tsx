@@ -16,6 +16,8 @@ const EditJob = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [companyName, setCompanyName] = useState("");
+  const [hrName, setHrName] = useState("");
   const [jobData, setJobData] = useState({
     title: "",
     description: "",
@@ -36,6 +38,16 @@ const EditJob = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth?role=employer");
+      return;
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_name, full_name")
+      .eq("id", session.user.id)
+      .single();
+    if (profile) {
+      setCompanyName(profile.company_name || "");
+      setHrName(profile.full_name || "");
     }
   };
 
@@ -132,6 +144,17 @@ const EditJob = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Company Name</Label>
+                  <Input value={companyName} disabled className="bg-muted" />
+                </div>
+                <div>
+                  <Label>HR / Posted By</Label>
+                  <Input value={hrName} disabled className="bg-muted" />
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="title">Job Title *</Label>
                 <Input
