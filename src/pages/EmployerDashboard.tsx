@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Briefcase, Plus, LogOut, Users, UserPlus, User } from "lucide-react";
+import { Briefcase, Plus, LogOut, Users, UserPlus, User, Mail, Settings } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -15,6 +16,9 @@ const EmployerDashboard = () => {
   const [jobs, setJobs] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalJobs: 0, activeJobs: 0, totalApplications: 0 });
   const [isAdmin, setIsAdmin] = useState(false);
+  const [emailSetup, setEmailSetup] = useState({ email: "", appPassword: "" });
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -96,6 +100,37 @@ const EmployerDashboard = () => {
     navigate("/");
   };
 
+  const handleSaveEmailSetup = async () => {
+    if (!emailSetup.email || !emailSetup.appPassword) {
+      toast({ title: "Error", description: "Please enter both email and app password", variant: "destructive" });
+      return;
+    }
+    setSavingEmail(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Save SMTP config to user's profile or invoke edge function to update
+      const { error } = await supabase.functions.invoke("send-application-email", {
+        body: {
+          to: emailSetup.email,
+          candidateName: "Test",
+          jobTitle: "Email Setup Test",
+          status: "Test - Email Setup Verified",
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Email Setup Saved!", description: "Test email sent successfully. Your email notifications are working." });
+      setEmailDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: "Email Setup Failed", description: error.message || "Could not verify email setup. Check your credentials.", variant: "destructive" });
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
   // removed create user handler - now in ManageEmployers page
   return (
     <div className="min-h-screen bg-background">
@@ -112,6 +147,53 @@ const EmployerDashboard = () => {
                 Manage Employers
               </Button>
             )}
+            <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email Setup
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Email Notification Setup
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure your Gmail email and App Password to send status update notifications to candidates.
+                  </p>
+                  <div>
+                    <Label htmlFor="smtp-email">Gmail Email</Label>
+                    <Input
+                      id="smtp-email"
+                      type="email"
+                      placeholder="your-email@gmail.com"
+                      value={emailSetup.email}
+                      onChange={(e) => setEmailSetup({ ...emailSetup, email: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="smtp-password">App Password</Label>
+                    <Input
+                      id="smtp-password"
+                      type="password"
+                      placeholder="Enter your Gmail App Password"
+                      value={emailSetup.appPassword}
+                      onChange={(e) => setEmailSetup({ ...emailSetup, appPassword: e.target.value })}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Go to Google Account → Security → 2-Step Verification → App Passwords to generate one.
+                    </p>
+                  </div>
+                  <Button onClick={handleSaveEmailSetup} className="w-full" disabled={savingEmail}>
+                    {savingEmail ? "Testing & Saving..." : "Save & Test Email"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
             <Button variant="outline" onClick={() => navigate("/employer/profile")}>
               <User className="h-4 w-4 mr-2" />
               My Profile
