@@ -24,6 +24,7 @@ const EditJob = () => {
     experience_required: "",
     location: "",
     job_type: "Work From Office",
+    department: "",
   });
 
   useEffect(() => {
@@ -62,6 +63,7 @@ const EditJob = () => {
         experience_required: data.experience_required || "",
         location: data.location,
         job_type: data.job_type,
+        department: data.department || "",
       });
     }
     setFetching(false);
@@ -81,6 +83,7 @@ const EditJob = () => {
         experience_required: jobData.experience_required,
         location: jobData.location,
         job_type: jobData.job_type,
+        department: jobData.department || null,
       })
       .eq("id", id);
 
@@ -178,6 +181,16 @@ const EditJob = () => {
                   placeholder="e.g., 2-5 years"
                   value={jobData.experience_required}
                   onChange={(e) => setJobData({ ...jobData, experience_required: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  id="department"
+                  placeholder="e.g., Engineering, Marketing"
+                  value={jobData.department}
+                  onChange={(e) => setJobData({ ...jobData, department: e.target.value })}
                 />
               </div>
 

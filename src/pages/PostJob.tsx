@@ -22,6 +22,7 @@ const PostJob = () => {
     experience_required: "",
     location: "",
     job_type: "Work From Office",
+    department: "",
   });
 
   useEffect(() => {
@@ -51,6 +52,7 @@ const PostJob = () => {
       experience_required: jobData.experience_required,
       location: jobData.location,
       job_type: jobData.job_type,
+      department: jobData.department || null,
     });
 
     if (error) {
@@ -139,6 +141,16 @@ const PostJob = () => {
                   placeholder="e.g., 2-5 years"
                   value={jobData.experience_required}
                   onChange={(e) => setJobData({ ...jobData, experience_required: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="department">Department</Label>
+                <Input
+                  id="department"
+                  placeholder="e.g., Engineering, Marketing"
+                  value={jobData.department}
+                  onChange={(e) => setJobData({ ...jobData, department: e.target.value })}
                 />
               </div>
 

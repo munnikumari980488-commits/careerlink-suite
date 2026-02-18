@@ -71,6 +71,7 @@ export type Database = {
       jobs: {
         Row: {
           created_at: string | null
+          department: string | null
           description: string
           employer_id: string
           experience_required: string | null
@@ -85,6 +86,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          department?: string | null
           description: string
           employer_id: string
           experience_required?: string | null
@@ -99,6 +101,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          department?: string | null
           description?: string
           employer_id?: string
           experience_required?: string | null

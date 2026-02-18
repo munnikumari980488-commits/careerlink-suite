@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MapPin, Briefcase, DollarSign, LogOut, User } from "lucide-react";
+import { Search, MapPin, Briefcase, DollarSign, LogOut, User, Calendar, Building2, UserCircle } from "lucide-react";
 
 const Jobs = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const Jobs = () => {
       .from("jobs")
       .select(`
         *,
-        profiles!jobs_employer_id_fkey(company_name)
+        profiles!jobs_employer_id_fkey(company_name, full_name)
       `)
       .eq("status", "active")
       .order("created_at", { ascending: false });
@@ -191,11 +191,22 @@ const Jobs = () => {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold mb-2">{job.title}</h3>
-                      <p className="text-muted-foreground mb-3">
-                        {job.profiles?.company_name || "Company"}
-                      </p>
+                      <h3 className="text-xl font-semibold mb-1">{job.title}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Building2 className="h-4 w-4 text-primary" />
+                        <span className="font-medium text-primary">{job.profiles?.company_name || "Company"}</span>
+                      </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
+                        <div className="flex items-center gap-1">
+                          <UserCircle className="h-4 w-4" />
+                          HR: {job.profiles?.full_name || "N/A"}
+                        </div>
+                        {job.department && (
+                          <div className="flex items-center gap-1">
+                            <Briefcase className="h-4 w-4" />
+                            Dept: {job.department}
+                          </div>
+                        )}
                         <div className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
                           {job.location}
@@ -204,12 +215,20 @@ const Jobs = () => {
                           <Briefcase className="h-4 w-4" />
                           {job.job_type}
                         </div>
-                        {job.salary_min && job.salary_max && (
+                        {(job.salary_min || job.salary_max) && (
                           <div className="flex items-center gap-1">
                             <DollarSign className="h-4 w-4" />
-                            ₹{job.salary_min.toLocaleString()} - ₹{job.salary_max.toLocaleString()}
+                            {job.salary_min && job.salary_max
+                              ? `₹${job.salary_min.toLocaleString()} - ₹${job.salary_max.toLocaleString()}`
+                              : job.salary_min
+                                ? `₹${job.salary_min.toLocaleString()}`
+                                : `₹${job.salary_max?.toLocaleString()}`}
                           </div>
                         )}
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          Posted: {new Date(job.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        </div>
                       </div>
                       <p className="text-sm line-clamp-2">{job.description}</p>
                     </div>
