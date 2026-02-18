@@ -13,6 +13,8 @@ import { Briefcase, ArrowLeft } from "lucide-react";
 const PostJob = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [companyName, setCompanyName] = useState("");
+  const [hrName, setHrName] = useState("");
   const [loading, setLoading] = useState(false);
   const [jobData, setJobData] = useState({
     title: "",
@@ -33,6 +35,17 @@ const PostJob = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth?role=employer");
+      return;
+    }
+    // Fetch employer profile for company name and HR name
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_name, full_name")
+      .eq("id", session.user.id)
+      .single();
+    if (profile) {
+      setCompanyName(profile.company_name || "");
+      setHrName(profile.full_name || "");
     }
   };
 
@@ -92,6 +105,17 @@ const PostJob = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Company Name</Label>
+                  <Input value={companyName} disabled className="bg-muted" />
+                </div>
+                <div>
+                  <Label>HR / Posted By</Label>
+                  <Input value={hrName} disabled className="bg-muted" />
+                </div>
+              </div>
+
               <div>
                 <Label htmlFor="title">Job Title *</Label>
                 <Input
